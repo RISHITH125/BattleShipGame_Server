@@ -48,8 +48,13 @@ const handleMessage = (bytes, uuid) => {
       user.roomId = roomId;
       console.log(`${user.username} joined room ${roomId}`);
       connections[uuid].send(JSON.stringify({ action: "JoinedRoom"}));
+
+      connections[uuid].send(JSON.stringify({ action: "BroadCastName", player1:user.username, player2:otherPlayer.username})); // 2nd player
+      connections[otherPlayerUuid].send(JSON.stringify({ action: "BroadCastName" , player1:otherPlayer.username , player2:user.username }));// 1st player
+
       const room= rooms[user.roomId];
       const otherPlayerUuid = room.clients.find((clientUuid)=>clientUuid != uuid);
+      const otherPlayer = users[otherPlayerUuid]
       // starting the game
       connections[uuid].send(JSON.stringify({ action: "SelectShips"})); // 2nd player
       connections[otherPlayerUuid].send(JSON.stringify({ action: "SelectShips"}));// 1st player
