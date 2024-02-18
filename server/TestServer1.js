@@ -39,6 +39,8 @@ const handleMessage = (bytes, uuid) => {
 
     //telling the user 1 to wait for the second player to join
     connections[uuid].send(JSON.stringify({ action: "Waiting for the player2"}));
+    console.log(user.username)
+    console.log(JSON.stringify({ action: "Waiting for the player2"}))
   } 
   else if (message.action === "join room") {
     const roomId = message.roomId;
@@ -47,18 +49,24 @@ const handleMessage = (bytes, uuid) => {
       room.clients.push(uuid);
       user.roomId = roomId;
       console.log(`${user.username} joined room ${roomId}`);
+
+
+      const otherPlayerUuid = room.clients.find((clientUuid)=>clientUuid != uuid);
+      const otherPlayer = users[otherPlayerUuid]
+
       connections[uuid].send(JSON.stringify({ action: "JoinedRoom"}));
+      connections[otherPlayerUuid].send(JSON.stringify({ action: "JoinedRoom"}));
+
+
 
       connections[uuid].send(JSON.stringify({ action: "BroadCastName", player1:user.username, player2:otherPlayer.username})); // 2nd player
       connections[otherPlayerUuid].send(JSON.stringify({ action: "BroadCastName" , player1:otherPlayer.username , player2:user.username }));// 1st player
 
-      const room= rooms[user.roomId];
-      const otherPlayerUuid = room.clients.find((clientUuid)=>clientUuid != uuid);
-      const otherPlayer = users[otherPlayerUuid]
       // starting the game
       connections[uuid].send(JSON.stringify({ action: "SelectShips"})); // 2nd player
       connections[otherPlayerUuid].send(JSON.stringify({ action: "SelectShips"}));// 1st player
-    } else {
+    } 
+    else {
       console.log(`Room ${roomId} is full or does not exist`);
     }
   }
@@ -112,15 +120,13 @@ const handleClose = (uuid) => {
   }
 };
 
-const broadcast = (roomId, excludeUuid) => {
+const broadcast = (roomId) => {
   const room = rooms[roomId];
   if (room) {
     room.clients.forEach((uuid) => {
-      if (uuid !== excludeUuid) {
         const connection = connections[uuid];
         const message = JSON.stringify(users[uuid].state);
         connection.send(message);
-      }
     });
   }
 };
