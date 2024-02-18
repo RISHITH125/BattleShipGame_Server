@@ -38,7 +38,7 @@ const handleMessage = (bytes, uuid) => {
     console.log(`${user.username} created room ${roomId}`);
 
     //telling the user 1 to wait for the second player to join
-    connections[uuid].send(JSON.stringify({ action: "Waiting for the player2"}));
+    connections[uuid].send(JSON.stringify({ action: "Waiting for the player2", RoomId : user.roomId}));
     console.log(user.username)
     console.log(JSON.stringify({ action: "Waiting for the player2"}))
   } 
