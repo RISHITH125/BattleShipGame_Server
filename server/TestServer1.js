@@ -70,9 +70,32 @@ const handleMessage = (bytes, uuid) => {
       console.log(`Room ${roomId} is full or does not exist`);
     }
   }
-  if (message.action === "check index") {
+  if (message.action === "ShipsSelectionComplete") {
+    const player2uuid = room.clients.find((clientUuid) => clientUuid !== uuid);
+    const player2 = users[player2uuid];
+    const player2Connection = connections[player2uuid];
+    const selectedShips = message.selectedShips; // assuming the client sends the array of selected ships with the key 'selectedShips'
+    if (Array.isArray(selectedShips)) {
+      users[uuid].MyShips = selectedShips;
+      console.log(`${users[uuid].username}'s ships have been set.`);
+      
+      // Check if both users in the room have set their ships
+      const room = rooms[users[uuid].roomId];
+      if (room && room.clients.every(clientUuid => Array.isArray(users[clientUuid].MyShips) && users[clientUuid].MyShips.length > 0)) {
+        // If they have, send a message to the room creator that it's their turn
+        const roomCreatorUuid = room.owner;
+        users[roomCreatorUuid].Myturn = true;
+        connections[roomCreatorUuid].send(JSON.stringify({ action: "My turn", turn:users[roomCreatorUuid].Myturn}));
+        player2Connection.send(JSON.stringify({action:"Opponent turn"}))
+      }
+    } 
+    else {
+      console.log(`Invalid data received for setting ships for user ${users[uuid].username}`);
+    }
+  }
+  if (message.action === "turn complete") {
     const room = rooms[user.roomId];
-    const player2uuid = room.clients.find((clientUuid) => clientUuid != uuid);
+    const player2uuid = room.clients.find((clientUuid) => clientUuid !== uuid);
     const player2 = users[player2uuid];
     const indexExists = player2.MyShips.includes(message.SelectedShip);
     if (indexExists) {
@@ -85,17 +108,30 @@ const handleMessage = (bytes, uuid) => {
       connections[uuid].send(JSON.stringify({ action: "index check", exists: false }));
     }
     user.SelectedShip=null
-  }
-
-  if (message.action === "turn complete") {
+  user.Myturn = false;
+  user.turns += 1; // Increment the turns property
+  if (user.turns >= 7) {
+    // If the user has taken 7 turns, end the game
     const room = rooms[user.roomId];
     const player2uuid = room.clients.find((clientUuid) => clientUuid !== uuid);
     const player2 = users[player2uuid];
-    user.Myturn=false
+    let winner;
+    if (user.DestroyedShip.length > player2.DestroyedShip.length) {
+      winner = user.username;
+    } else if (user.DestroyedShip.length < player2.DestroyedShip.length) {
+      winner = player2.username;
+    } else {
+      winner = "It's a tie";
+    }
+    // Send a message to both players with the result
+    connections[uuid].send(JSON.stringify({ action: "Game over", whowin:winner }));
+    connections[player2uuid].send(JSON.stringify({ action: "Game over", whowin:winner }));
+  } else {
+    // If the game is not over, it's the other player's turn
     player2.Myturn = true;
-    const player2Connection = connections[player2uuid];
-    player2Connection.send(JSON.stringify({action:"My turn",turn:player2.Myturn}))
-    connections[uuid].send(JSON.stringify({action:"PlayerOneTurnComplete",turn:user.Myturn}))
+    connections[uuid].send(JSON.stringify({action:"Opponent turn"}));
+    player2Connection.send(JSON.stringify({action:"My turn",turn:player2.Myturn}));
+  }
   }
 };
 
@@ -108,9 +144,12 @@ const handleClose = (uuid) => {
     room.clients = room.clients.filter((clientUuid) => clientUuid !== uuid);
     if (room.clients.length ===  0) {
       delete rooms[roomId];
+    } else {
+      // If there's another player in the room, send them a message that the game is over and they are the winner
+      const otherPlayerUuid = room.clients[0];
+      connections[otherPlayerUuid].send(JSON.stringify({ action: "Game over", whowin: users[otherPlayerUuid].username }));
     }
   }
-
   console.log(`${user.username} disconnected`);
   delete connections[uuid];
   delete users[uuid];
@@ -143,6 +182,7 @@ wsServer.on("connection", (connection, request) => {
     DestroyedShip: [],
     MyHealth:  7,
     Myturn: false,
+    turns:0,
   };
   connection.on("message", (message) => handleMessage(message, uuid));
   connection.on("close", () => handleClose(uuid));
