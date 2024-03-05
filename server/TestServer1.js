@@ -57,22 +57,22 @@ const handleMessage = (bytes, uuid) => {
       connections[uuid].send(JSON.stringify({ action: "JoinedRoom"}));
       connections[otherPlayerUuid].send(JSON.stringify({ action: "JoinedRoom"}));
 
-
-
-      connections[uuid].send(JSON.stringify({ action: "BroadCastName", player1:user.username, player2:otherPlayer.username})); // 2nd player
-      connections[otherPlayerUuid].send(JSON.stringify({ action: "BroadCastName" , player1:otherPlayer.username , player2:user.username }));// 1st player
-
-      // starting the game
-      connections[uuid].send(JSON.stringify({ action: "SelectShips"})); // 2nd player
-      connections[otherPlayerUuid].send(JSON.stringify({ action: "SelectShips"}));// 1st player
+      setTimeout(() => {
+        connections[uuid].send(JSON.stringify({ action: "BroadCastName", player1:user.username, player2:otherPlayer.username})); // 2nd player
+        connections[otherPlayerUuid].send(JSON.stringify({ action: "BroadCastName" , player1:otherPlayer.username , player2:user.username }));// 1st player
+  
+        // starting the game
+        connections[uuid].send(JSON.stringify({ action: "SelectShips"})); // 2nd player
+        connections[otherPlayerUuid].send(JSON.stringify({ action: "SelectShips"}));// 1st player
+      }, 50);
     } 
     else {
       console.log(`Room ${roomId} is full or does not exist`);
     }
   }
   if (message.action === "ShipsSelectionComplete") {
+    const room = rooms[users[uuid].roomId];
     const player2uuid = room.clients.find((clientUuid) => clientUuid !== uuid);
-    const player2 = users[player2uuid];
     const player2Connection = connections[player2uuid];
     const selectedShips = message.selectedShips; // assuming the client sends the array of selected ships with the key 'selectedShips'
     if (Array.isArray(selectedShips)) {
@@ -80,13 +80,15 @@ const handleMessage = (bytes, uuid) => {
       console.log(`${users[uuid].username}'s ships have been set.`);
       
       // Check if both users in the room have set their ships
-      const room = rooms[users[uuid].roomId];
+      
       if (room && room.clients.every(clientUuid => Array.isArray(users[clientUuid].MyShips) && users[clientUuid].MyShips.length > 0)) {
         // If they have, send a message to the room creator that it's their turn
         const roomCreatorUuid = room.owner;
         users[roomCreatorUuid].Myturn = true;
         connections[roomCreatorUuid].send(JSON.stringify({ action: "My turn", turn:users[roomCreatorUuid].Myturn}));
-        player2Connection.send(JSON.stringify({action:"Opponent turn"}))
+        // we have to add a time out or recieve a message to switch to opponent 2
+         
+        // player2Connection.send(JSON.stringify({action:"Opponent turn"}))
       }
     } 
     else {
