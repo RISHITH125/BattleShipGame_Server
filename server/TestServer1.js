@@ -84,9 +84,11 @@ const handleMessage = (bytes, uuid) => {
       if (room && room.clients.every(clientUuid => Array.isArray(users[clientUuid].MyShips) && users[clientUuid].MyShips.length > 0)) {
         // If they have, send a message to the room creator that it's their turn
         const roomCreatorUuid = room.owner;
-        users[roomCreatorUuid].Myturn = true;
-        connections[roomCreatorUuid].send(JSON.stringify({ action: "My turn", turn:users[roomCreatorUuid].Myturn}));
-        // we have to add a time out or recieve a message to switch to opponent 2
+        if (!users[roomCreatorUuid].Myturn) { // Check if the turn has already been set
+          users[roomCreatorUuid].Myturn = true;
+          connections[roomCreatorUuid].send(JSON.stringify({ action: "My turn", turn:users[roomCreatorUuid].Myturn}));
+        }
+          // we have to add a time out or recieve a message to switch to opponent 2
          
         // player2Connection.send(JSON.stringify({action:"Opponent turn"}))
       }
