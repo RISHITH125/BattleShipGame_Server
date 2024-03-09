@@ -33,6 +33,7 @@ const handleMessage = (bytes, uuid) => {
     rooms[roomId] = {
       owner: uuid,
       clients: [uuid],
+      gameStarted:  false,
     };
     user.roomId = roomId;
     console.log(`${user.username} created room ${roomId}`);
@@ -88,14 +89,17 @@ const handleMessage = (bytes, uuid) => {
         if (!users[roomCreatorUuid].Myturn) { // Check if the turn has already been set
           users[roomCreatorUuid].Myturn = true;
           connections[roomCreatorUuid].send(JSON.stringify({ action: "My turn", turn:users[roomCreatorUuid].Myturn}));
-          // connections[roomCreatorUuid].send(JSON.stringify({ action: "Let the game begin"}));
+          // player2Connection.send(JSON.stringify({ action: "Let the game begin"}));
+          connections[roomCreatorUuid].send(JSON.stringify({ action: "Let the game begin"}));
+       
           if (player2uuid !== roomCreatorUuid) { // Check if player2 is not the owner
             player2Connection.send(JSON.stringify({action:"Opponent turn"}));
             player2Connection.send(JSON.stringify({ action: "Let the game begin"}));
           }
           else if(uuid !== roomCreatorUuid) {
             connections[uuid].send(JSON.stringify({action:"Opponent turn"}));
-            connections.send(JSON.stringify({ action: "Let the game begin"}));  
+            connections[uuid].send(JSON.stringify({ action: "Let the game begin"}));
+      
           }
         }
       }
