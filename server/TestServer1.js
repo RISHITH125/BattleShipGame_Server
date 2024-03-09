@@ -72,8 +72,7 @@ const handleMessage = (bytes, uuid) => {
   }
   if (message.action === "ShipsSelectionComplete") {
     const room = rooms[users[uuid].roomId];
-    const player2uuid = room.clients.find((clientUuid) => clientUuid !== uuid);
-    const player2Connection = connections[player2uuid];
+
     const selectedShips = message.selectedShips; // assuming the client sends the array of selected ships with the key 'selectedShips'
     if (Array.isArray(selectedShips)) {
       users[uuid].MyShips = selectedShips;
@@ -84,20 +83,25 @@ const handleMessage = (bytes, uuid) => {
       if (room && room.clients.every(clientUuid => Array.isArray(users[clientUuid].MyShips) && users[clientUuid].MyShips.length > 0)) {
         // If they have, send a message to the room creator that it's their turn
         const roomCreatorUuid = room.owner;
+        const player2uuid = room.clients.find((clientUuid) => clientUuid !== uuid);
+        const player2Connection = connections[player2uuid];
         if (!users[roomCreatorUuid].Myturn) { // Check if the turn has already been set
           users[roomCreatorUuid].Myturn = true;
           connections[roomCreatorUuid].send(JSON.stringify({ action: "My turn", turn:users[roomCreatorUuid].Myturn}));
+          if (player2uuid !== roomCreatorUuid) { // Check if player2 is not the owner
+            player2Connection.send(JSON.stringify({action:"Opponent turn"}));
+          }
+          else if(uuid !== roomCreatorUuid) {
+            connections[uuid].send(JSON.stringify({action:"Opponent turn"}));
+          }
         }
-          // we have to add a time out or recieve a message to switch to opponent 2
-         
-        // player2Connection.send(JSON.stringify({action:"Opponent turn"}))
       }
     } 
     else {
       console.log(`Invalid data received for setting ships for user ${users[uuid].username}`);
     }
   }
-  if (message.action === "turn complete") {
+  if (message.action === "turn complete") { 
     const room = rooms[user.roomId];
     const player2uuid = room.clients.find((clientUuid) => clientUuid !== uuid);
     const player2 = users[player2uuid];
