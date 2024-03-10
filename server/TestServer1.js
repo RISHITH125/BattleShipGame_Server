@@ -26,7 +26,7 @@ const generateRoomId = () => {
 const handleMessage = (bytes, uuid) => {
   const message = JSON.parse(bytes.toString());
   const user = users[uuid];
-  console.log(user);
+  // console.log(user);
 
   if (message.action === "create room") {
     const roomId = generateRoomId();
@@ -113,10 +113,13 @@ const handleMessage = (bytes, uuid) => {
     const player2uuid = room.clients.find((clientUuid) => clientUuid !== uuid);
     const player2 = users[player2uuid];
     const indexExists = player2.MyShips.includes(message.SelectedShip);
+
+    console.log(message.SelectedShip)
     if (indexExists) {
       user.DestroyedShip.push(message.SelectedShip);
       player2.MyHealth -=   1;
       const player2Connection = connections[player2uuid];
+      console.log(user) 
       player2Connection.send(JSON.stringify({ action: "health update", health: player2.MyHealth }));
       connections[uuid].send(JSON.stringify({ action: "index check", exists: true }));
     } else {
@@ -124,7 +127,7 @@ const handleMessage = (bytes, uuid) => {
     }
     user.SelectedShip=null
   user.Myturn = false;
-  user.turns += 1; // Increment the turns property
+  user.turns = message.rotation; // Increment the turns property
   if (user.turns >= 7) {
     // If the user has taken 7 turns, end the game
     const room = rooms[user.roomId];
@@ -143,6 +146,7 @@ const handleMessage = (bytes, uuid) => {
     connections[player2uuid].send(JSON.stringify({ action: "Game over", whowin:winner }));
   } else {
     // If the game is not over, it's the other player's turn
+    const player2Connection = connections[player2uuid];
     player2.Myturn = true;
     connections[uuid].send(JSON.stringify({action:"Opponent turn"}));
     player2Connection.send(JSON.stringify({action:"My turn",turn:player2.Myturn}));
