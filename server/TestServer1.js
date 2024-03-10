@@ -115,7 +115,7 @@ const handleMessage = (bytes, uuid) => {
     const indexExists = player2.MyShips.includes(message.SelectedShip);
 
     console.log(message.SelectedShip)
-    if (indexExists) {
+    if (indexExists && !user.DestroyedShip.includes(message.SelectedShip)) {
       user.DestroyedShip.push(message.SelectedShip);
       player2.MyHealth -=   1;
       const player2Connection = connections[player2uuid];
@@ -128,7 +128,7 @@ const handleMessage = (bytes, uuid) => {
     user.SelectedShip=null
   user.Myturn = false;
   user.turns = message.rotation; // Increment the turns property
-  if (user.turns >= 7) {
+  if (user.turns >= 6 && player2.turns >= 6) {
     // If the user has taken 7 turns, end the game
     const room = rooms[user.roomId];
     const player2uuid = room.clients.find((clientUuid) => clientUuid !== uuid);
@@ -166,7 +166,8 @@ const handleClose = (uuid) => {
     } else {
       // If there's another player in the room, send them a message that the game is over and they are the winner
       const otherPlayerUuid = room.clients[0];
-      connections[otherPlayerUuid].send(JSON.stringify({ action: "Game over", whowin: users[otherPlayerUuid].username }));
+      connections[otherPlayerUuid].send(JSON.stringify({ action: "Game over", whowin:users[otherPlayerUuid].username+" Wins" }));
+      console.log(user)
     }
   }
   console.log(`${user.username} disconnected`);
