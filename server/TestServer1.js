@@ -2,12 +2,14 @@
 //TASK REMINDER !!!!!  :-  Pass an error msg to the client whenever required (NOT COMPLETED)
 
 
-const { WebSocketServer } = require("ws");
-const http = require("http");
-const uuidv4 = require("uuid").v4;
-const url = require("url");
+const express = require('express');
+const { Server: WebSocketServer } = require('ws');
+const http = require('http');
+const uuidv4 = require('uuid').v4;
+const url = require('url');
 
-const server = http.createServer();
+const app = express();
+const server = http.createServer(app);
 const wsServer = new WebSocketServer({ server });
 
 const port =  4748;
@@ -135,9 +137,9 @@ const handleMessage = (bytes, uuid) => {
     const player2 = users[player2uuid];
     let winner;
     if (user.DestroyedShip.length > player2.DestroyedShip.length) {
-      winner = user.username;
+      winner = user.username + " Wins";
     } else if (user.DestroyedShip.length < player2.DestroyedShip.length) {
-      winner = player2.username;
+      winner = player2.username + " Wins";
     } else {
       winner = "It's a tie";
     }
